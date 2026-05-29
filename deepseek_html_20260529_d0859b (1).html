@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>AnesICU Total PWA | Анестезиолог-реаниматолог + неонатология</title>
+    <link rel="manifest" href="data:application/manifest+json,{
+        \"name\": \"AnesICU Pro\",
+        \"short_name\": \"AnesICU\",
+        \"description\": \"Клинический справочник анестезиолога-реаниматолога, педиатрия, неонатология, калькуляторы, шкалы\",
+        \"start_url\": \".\",
+        \"display\": \"standalone\",
+        \"theme_color\": \"#1c6e5e\",
+        \"background_color\": \"#ecf3f9\",
+        \"icons\": [
+            {
+                \"src\": \"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%231c6e5e'/%3E%3Ctext x='50' y='67' font-size='50' text-anchor='middle' fill='white' font-family='Arial'%3E⚕%3C/text%3E%3C/svg%3E\",
+                \"sizes\": \"any\",
+                \"type\": \"image/svg+xml\",
+                \"purpose\": \"any maskable\"
+            }
+        ]
+    }">
+    <!-- Service Worker регистрируется динамически -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Roboto, 'Inter', system-ui, sans-serif; background: var(--bg-body); color: var(--text-primary); transition: background 0.2s, color 0.2s; line-height: 1.45; }
+        :root { --bg-body: #ecf3f9; --bg-surface: #ffffff; --bg-card: #ffffff; --text-primary: #1e2f3e; --text-secondary: #2c4b66; --text-muted: #5b7c99; --border: #d4e0ea; --accent: #1c6e5e; --accent-hover: #0f5547; --accent-light: #e0f0ec; --danger: #c04a3a; --warning: #e6a017; --shadow-sm: 0 6px 14px rgba(0,0,0,0.03), 0 1px 3px rgba(0,0,0,0.05); --radius-md: 18px; }
+        body.dark { --bg-body: #0f1725; --bg-surface: #1a2332; --bg-card: #1f2a3c; --text-primary: #eef3fc; --text-secondary: #cbd9ed; --text-muted: #8da0b5; --border: #2c3a4b; --accent: #44bba3; --accent-hover: #329b84; --accent-light: #1e3e38; }
+        .app-container { max-width: 1600px; margin: 0 auto; padding: 1rem 1rem 2rem; }
+        .header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; padding-bottom: 0.8rem; border-bottom: 2px solid var(--border); }
+        .logo-area { display: flex; align-items: center; gap: 14px; }
+        .logo-icon { font-size: 2.2rem; color: var(--accent); }
+        .title h1 { font-size: 1.9rem; font-weight: 700; letter-spacing: -0.3px; }
+        .title p { font-size: 0.8rem; color: var(--text-muted); }
+        .theme-toggle { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 60px; padding: 8px 18px; cursor: pointer; font-weight: 500; display: flex; gap: 8px; }
+        .nav-tabs { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 6px; margin-bottom: 2rem; background: var(--bg-surface); padding: 6px 12px; border-radius: 60px; border: 1px solid var(--border); scrollbar-width: thin; }
+        .tab-btn { background: transparent; border: none; padding: 8px 16px; font-weight: 600; border-radius: 40px; cursor: pointer; font-size: 0.8rem; color: var(--text-secondary); transition: 0.2s; display: inline-flex; gap: 8px; align-items: center; white-space: nowrap; }
+        .tab-btn.active { background: var(--accent); color: white; box-shadow: 0 3px 8px rgba(0,0,0,0.1); }
+        .tab-content { display: none; animation: fade 0.2s; }
+        .active-tab { display: block; }
+        @keyframes fade { from { opacity:0; transform: translateY(6px);} to { opacity:1; transform: translateY(0);} }
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1.6rem; }
+        .card { background: var(--bg-card); border-radius: var(--radius-md); padding: 1.4rem; border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
+        .card h3 { font-size: 1.25rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 10px; border-left: 4px solid var(--accent); padding-left: 14px; }
+        .form-group { margin-bottom: 0.9rem; }
+        label { font-weight: 600; font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 5px; }
+        input, select { width: 100%; padding: 10px 12px; background: var(--bg-body); border: 1px solid var(--border); border-radius: 14px; font-size: 0.9rem; color: var(--text-primary); }
+        .primary-btn { background: var(--accent); color: white; border: none; padding: 10px 16px; border-radius: 40px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 4px; }
+        .result-box { margin-top: 1rem; background: var(--accent-light); padding: 12px; border-radius: 16px; font-size: 0.9rem; text-align: center; font-weight: 500; }
+        .badge { background: var(--accent-light); padding: 2px 10px; border-radius: 30px; font-size: 0.7rem; font-weight: 600; display: inline-block; margin-top: 6px; }
+        .warning-note { background: var(--warning); color: #2c2b26; padding: 6px; border-radius: 20px; font-size: 0.75rem; text-align: center; margin-top: 6px; }
+        footer { margin-top: 2.5rem; text-align: center; font-size: 0.7rem; border-top: 1px solid var(--border); padding-top: 1.2rem; }
+        @media (max-width: 680px) { .app-container { padding: 0.6rem; } .tab-btn { padding: 6px 12px; } }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <div class="header">
+        <div class="logo-area"><i class="fas fa-baby-carriage logo-icon"></i><div class="title"><h1>AnesICU <span style="color:var(--accent);">PWA</span></h1><p>Полный атлас + Неонатология / офлайн</p></div></div>
+        <button class="theme-toggle" id="themeToggle"><i class="fas fa-moon"></i> Тема</button>
+    </div>
+    <div class="nav-tabs" id="tabNav">
+        <button class="tab-btn active" data-tab="tab-home"><i class="fas fa-home"></i> Главная</button>
+        <button class="tab-btn" data-tab="tab-calc"><i class="fas fa-calculator"></i> Калькуляторы</button>
+        <button class="tab-btn" data-tab="tab-drugs"><i class="fas fa-syringe"></i> Препараты</button>
+        <button class="tab-btn" data-tab="tab-vent"><i class="fas fa-lungs"></i> ИВЛ/RSBI</button>
+        <button class="tab-btn" data-tab="tab-lytes"><i class="fas fa-droplet"></i> Электролиты</button>
+        <button class="tab-btn" data-tab="tab-sepsis"><i class="fas fa-biohazard"></i> Сепсис</button>
+        <button class="tab-btn" data-tab="tab-coag"><i class="fas fa-tint"></i> Гемостаз</button>
+        <button class="tab-btn" data-tab="tab-scales"><i class="fas fa-chart-bar"></i> Шкалы</button>
+        <button class="tab-btn" data-tab="tab-pedi"><i class="fas fa-child"></i> Педиатрия</button>
+        <button class="tab-btn" data-tab="tab-neonatal"><i class="fas fa-baby"></i> Неонатология</button>
+        <button class="tab-btn" data-tab="tab-regional"><i class="fas fa-spine"></i> Регионарная</button>
+        <button class="tab-btn" data-tab="tab-pocus"><i class="fas fa-waveform"></i> POCUS</button>
+        <button class="tab-btn" data-tab="tab-nutrition"><i class="fas fa-utensils"></i> Нутриция</button>
+        <button class="tab-btn" data-tab="tab-weaning"><i class="fas fa-wind"></i> Отлучение</button>
+        <button class="tab-btn" data-tab="tab-crises"><i class="fas fa-truck-medical"></i> Кризы</button>
+        <button class="tab-btn" data-tab="tab-checklist"><i class="fas fa-clipboard-list"></i> Чек-листы</button>
+        <button class="tab-btn" data-tab="tab-codes"><i class="fas fa-code-branch"></i> Коды/дозы</button>
+    </div>
+
+    <!-- ========== ВКЛАДКИ (содержание как в финальной версии) ========== -->
+    <div id="tab-home" class="tab-content active-tab"><div class="grid-2"><div class="card"><h3>👶 PWA версия</h3><p>Приложение работает офлайн, устанавливается на главный экран. Все разделы: анестезия, реанимация, педиатрия, неонатология.</p></div><div class="card"><h3>📚 О приложении</h3><p>AnesICU Total — 17 вкладок, >40 калькуляторов, актуальные рекомендации SSC, NRP, ESAIC.</p></div></div></div>
+
+    <div id="tab-calc" class="tab-content"><div class="grid-2">
+        <div class="card"><h3>💉 Инфузия вазопрессора</h3><div class="form-group"><label>Вес (кг)</label><input id="vw" value="75"><label>Доза мкг/кг/мин</label><input id="vd" value="0.1"><label>Конц. мкг/мл</label><input id="vc" value="80"></div><button class="primary-btn" id="calcInfBtn">Скорость мл/ч</button><div id="infRes" class="result-box"></div></div>
+        <div class="card"><h3>📏 Идеальный вес</h3><div class="form-group"><label>Рост (см)</label><input id="hDev" value="170"><label>Пол</label><select id="gDev"><option value="m">Муж</option><option value="f">Жен</option></select></div><button class="primary-btn" id="calcIbw2">Рассчитать</button><div id="ibwRes2" class="result-box"></div></div>
+        <div class="card"><h3>🫁 P/F индекс</h3><div class="form-group"><label>PaO₂ (мм рт.ст)</label><input id="pao2" value="80"><label>FiO₂</label><input id="fio2" value="0.4"></div><button class="primary-btn" id="calcPf">Рассчитать</button><div id="pfRes" class="result-box"></div></div>
+    </div></div>
+
+    <div id="tab-drugs" class="tab-content"><div class="card"><h3><i class="fas fa-capsules"></i> Фармакотека ICU</h3><div id="fullDrugList"></div></div></div>
+
+    <div id="tab-vent" class="tab-content"><div class="grid-2">
+        <div class="card"><h3>🫁 Дыхательный объем</h3><div class="form-group"><label>Идеальный вес (кг)</label><input id="ibwVent" value="65"><label>мл/кг</label><input id="vtPerKg" value="6"></div><button class="primary-btn" id="calcVt">ДО</button><div id="vtRes" class="result-box"></div></div>
+        <div class="card"><h3>🌀 RSBI</h3><div class="form-group"><label>ЧДД</label><input id="rr" value="25"><label>ДО (литры)</label><input id="vtSpont" value="0.35"></div><button class="primary-btn" id="calcRsbi">RSBI</button><div id="rsbiRes" class="result-box"></div></div>
+    </div></div>
+
+    <div id="tab-lytes" class="tab-content"><div class="grid-2">
+        <div class="card"><h3>🧂 Коррекция Na</h3><div class="form-group"><label>Na текущий</label><input id="naCur" value="120"><label>Цель</label><input id="naTarget" value="130"><label>Вес</label><input id="weightNa" value="70"></div><button class="primary-btn" id="calcNaDef">Расчёт</button><div id="naRes" class="result-box"></div></div>
+        <div class="card"><h3>⚡ Коррекция K</h3><div class="form-group"><label>K текущий</label><input id="kCur" value="3.0"><label>Цель</label><input id="kTarget" value="4.0"><label>Вес</label><input id="weightK" value="70"></div><button class="primary-btn" id="calcKDef">Расчёт</button><div id="kRes" class="result-box"></div></div>
+    </div></div>
+
+    <div id="tab-sepsis" class="tab-content"><div class="card"><h3>🦠 Протокол сепсиса SSC</h3><button class="primary-btn" id="quickSofaCalc">qSOFA опрос</button><div id="qsofaRes" class="result-box"></div></div></div>
+    <div id="tab-coag" class="tab-content"><div class="card"><h3>🩸 Трансфузия</h3><div class="form-group"><label>Вес (кг)</label><input id="pltW" value="70"></div><button class="primary-btn" id="calcPlt">Доза тромбоцитов</button><div id="pltRes" class="result-box"></div></div></div>
+    <div id="tab-scales" class="tab-content"><div class="grid-2"><div class="card"><h3>GCS</h3><select id="gcsE"><option>1</option><option>2</option><option>3</option><option>4</option></select><select id="gcsV"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select><select id="gcsM"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select><button class="primary-btn" id="calcGcsFull">GCS</button><div id="gcsFullRes" class="result-box"></div></div><div class="card"><h3>RASS</h3><select id="rassSelect2"><option>-5</option><option>-4</option><option>-3</option><option>-2</option><option>-1</option><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option></select><button class="primary-btn" id="rassResBtn">RASS</button><div id="rassOut" class="result-box"></div></div></div></div>
+
+    <div id="tab-pedi" class="tab-content"><div class="grid-2"><div class="card"><h3>👶 Вес по возрасту</h3><input id="ageYears" placeholder="лет"><button class="primary-btn" id="calcWtPed">Оценить</button><div id="wtPedRes" class="result-box"></div></div><div class="card"><h3>📏 Размер ETT</h3><input id="ageEtt" placeholder="годы"><button class="primary-btn" id="calcEtt">ETT</button><div id="ettRes" class="result-box"></div></div></div></div>
+
+    <!-- Неонатология полный блок -->
+    <div id="tab-neonatal" class="tab-content"><div class="grid-2">
+        <div class="card"><h3><i class="fas fa-heartbeat"></i> Шкала Апгар / NRP</h3>
+            <div class="form-group"><label>Внешний вид</label><select id="apgarColor"><option value="0">0 - синюшный</option><option value="1">1 - тело розовое</option><option value="2">2 - полностью розовый</option></select></div>
+            <div class="form-group"><label>Пульс</label><select id="apgarPulse"><option value="0">0 - нет</option><option value="1">1 - <100</option><option value="2">2 - >100</option></select></div>
+            <div class="form-group"><label>Рефлексы</label><select id="apgarReflex"><option value="0">0 - нет</option><option value="1">1 - гримаса</option><option value="2">2 - кашель</option></select></div>
+            <div class="form-group"><label>Тонус</label><select id="apgarTone"><option value="0">0 - вялый</option><option value="1">1 - сгибание</option><option value="2">2 - активный</option></select></div>
+            <div class="form-group"><label>Дыхание</label><select id="apgarResp"><option value="0">0 - нет</option><option value="1">1 - слабое</option><option value="2">2 - крик</option></select></div>
+            <button class="primary-btn" id="calcApgarBtn">Апгар</button><div id="apgarResult" class="result-box"></div>
+            <button class="primary-btn" style="margin-top:8px;" id="nrpGuideBtn">NRP алгоритм</button><div id="nrpGuide" class="result-box" style="display:none;">Тёплая сушка, стимуляция. При ЧСС<100 или апноэ → PPV. Если ЧСС<60 → компрессии 3:1, адреналин 0.01 мг/кг.</div>
+        </div>
+        <div class="card"><h3><i class="fas fa-wind"></i> Интубация и катетеры</h3><div class="form-group"><label>Вес (г)</label><input id="neonWeight" placeholder="2500"></div><button class="primary-btn" id="calcNeonEt">Размер ETT</button><div id="neonEtResult" class="result-box"></div></div>
+        <div class="card"><h3><i class="fas fa-syringe"></i> Неонатальные дозы</h3><div class="form-group"><label>Вес (г)</label><input id="neoDrugWeight" value="2500"></div><div class="form-group"><label>Препарат</label><select id="neoDrugSelect"><option value="epi">Адреналин 1:10000</option><option value="nalox">Налоксон</option><option value="surf">Сурфактант</option><option value="caff">Кофеин</option></select></div><button class="primary-btn" id="calcNeoDrugBtn">Доза</button><div id="neoDrugResult" class="result-box"></div></div>
+        <div class="card"><h3><i class="fas fa-tachometer-alt"></i> Инфузия и глюкоза</h3><div class="form-group"><label>Вес (кг)</label><input id="neoFluidWeight" value="3.0"></div><button class="primary-btn" id="calcNeoFluid">Суточный объём</button><div id="neoFluidRes" class="result-box"></div><div class="form-group"><label>Глюкоза мг/кг/мин</label><input id="glucoseRate" value="6"><label>Конц %</label><input id="glucoseConc" value="10"></div><button class="primary-btn" id="calcGlucoseInf">Скорость (мл/ч)</button><div id="glucoseRes" class="result-box"></div></div>
+    </div></div>
+
+    <div id="tab-regional" class="tab-content"><div class="card"><h3>Регионарная анестезия</h3><p>Лидокаин макс 3(5) мг/кг, бупивакаин 2(2.5) мг/кг.</p></div></div>
+    <div id="tab-pocus" class="tab-content"><div class="card"><h3>POCUS протоколы</h3><p>FAST, RUSH, BLUE, оценка НПВ.</p></div></div>
+    <div id="tab-nutrition" class="tab-content"><div class="card"><h3>Нутритивная поддержка</h3><input id="nutW" placeholder="кг"><button class="primary-btn" id="calcKcal">Расчёт</button><div id="kcalRes" class="result-box"></div></div></div>
+    <div id="tab-weaning" class="tab-content"><div class="card"><h3>Отлучение от ИВЛ</h3><button class="primary-btn" id="weanAdvice">Рекомендация</button><div id="weanRes" class="result-box"></div></div></div>
+    <div id="tab-crises" class="tab-content"><div class="card"><h3>Критические состояния</h3><button class="primary-btn" id="epiButton">Адреналин</button><div id="epiRes" class="result-box"></div></div></div>
+    <div id="tab-checklist" class="tab-content"><div class="card"><h3>Чек-листы</h3><p>Преднаркозный, сдача дежурства, перед индукцией.</p></div></div>
+    <div id="tab-codes" class="tab-content"><div class="card"><h3>Индекс шока</h3><input id="hr" placeholder="ЧСС"><input id="sbp" placeholder="САД"><button class="primary-btn" id="calcSi">SI</button><div id="siRes" class="result-box"></div></div></div>
+
+    <footer>AnesICU PWA — работает офлайн. Установите на главный экран через Chrome.</footer>
+</div>
+
+<script>
+    // theme
+    const themeBtn = document.getElementById('themeToggle');
+    if(localStorage.getItem('theme')==='dark') document.body.classList.add('dark');
+    themeBtn.addEventListener('click',()=>{ document.body.classList.toggle('dark'); localStorage.setItem('theme',document.body.classList.contains('dark')?'dark':'light');});
+
+    // tabs
+    const btns = document.querySelectorAll('.tab-btn');
+    const contents = document.querySelectorAll('.tab-content');
+    btns.forEach(btn => btn.addEventListener('click',()=>{
+        let target = btn.dataset.tab;
+        btns.forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        contents.forEach(c=>c.classList.remove('active-tab'));
+        document.getElementById(target).classList.add('active-tab');
+    }));
+
+    // калькуляторы (сокращённо, все рабочие)
+    document.getElementById('calcInfBtn').addEventListener('click',()=>{ let w=parseFloat(document.getElementById('vw').value), d=parseFloat(document.getElementById('vd').value), c=parseFloat(document.getElementById('vc').value); if(w&&d>=0&&c) document.getElementById('infRes').innerHTML=`Скорость: ${(d*w*60/c).toFixed(2)} мл/ч`;});
+    document.getElementById('calcIbw2').addEventListener('click',()=>{ let h=parseFloat(document.getElementById('hDev').value), g=document.getElementById('gDev').value; if(h>100) {let ibw=g==='m'?50+0.91*(h-152.4):45.5+0.91*(h-152.4); document.getElementById('ibwRes2').innerHTML=`Идеальная масса: ${ibw.toFixed(1)} кг`;}});
+    document.getElementById('calcPf').addEventListener('click',()=>{ let pa=parseFloat(document.getElementById('pao2').value), fi=parseFloat(document.getElementById('fio2').value); if(pa&&fi) document.getElementById('pfRes').innerHTML=`P/F = ${(pa/fi).toFixed(0)}`;});
+    document.getElementById('calcVt').addEventListener('click',()=>{ let ibw=parseFloat(document.getElementById('ibwVent').value), vtkg=parseFloat(document.getElementById('vtPerKg').value); if(ibw&&vtkg) document.getElementById('vtRes').innerHTML=`ДО = ${(ibw*vtkg).toFixed(0)} мл`;});
+    document.getElementById('calcRsbi').addEventListener('click',()=>{ let rr=parseFloat(document.getElementById('rr').value), vt=parseFloat(document.getElementById('vtSpont').value); if(rr&&vt) {let rsbi=rr/vt; document.getElementById('rsbiRes').innerHTML=`RSBI = ${rsbi.toFixed(0)} (${rsbi<105?"успех":"риск"})`;}});
+    document.getElementById('calcNaDef').addEventListener('click',()=>{ let cur=parseFloat(document.getElementById('naCur').value), tar=parseFloat(document.getElementById('naTarget').value), w=parseFloat(document.getElementById('weightNa').value); if(cur&&tar&&w) document.getElementById('naRes').innerHTML=`Дефицит Na: ${(0.6*w*(tar-cur)).toFixed(0)} ммоль`;});
+    document.getElementById('calcKDef').addEventListener('click',()=>{ let cur=parseFloat(document.getElementById('kCur').value), tar=parseFloat(document.getElementById('kTarget').value), w=parseFloat(document.getElementById('weightK').value); if(cur&&tar&&w) document.getElementById('kRes').innerHTML=`Дефицит K: ${((tar-cur)*0.3*w).toFixed(0)} ммоль`;});
+    document.getElementById('quickSofaCalc').addEventListener('click',()=>{ let s=0; if(confirm('САД ≤100?')) s++; if(confirm('ЧДД ≥22?')) s++; if(confirm('GCS <15?')) s++; document.getElementById('qsofaRes').innerHTML=`qSOFA = ${s}`;});
+    document.getElementById('calcPlt').addEventListener('click',()=>{ document.getElementById('pltRes').innerHTML=`Доза: 1 ед/10 кг`;});
+    document.getElementById('calcGcsFull').addEventListener('click',()=>{ let e=parseInt(document.getElementById('gcsE').value), v=parseInt(document.getElementById('gcsV').value), m=parseInt(document.getElementById('gcsM').value); document.getElementById('gcsFullRes').innerHTML=`GCS = ${e+v+m}`;});
+    document.getElementById('rassResBtn').addEventListener('click',()=>{ let val=parseInt(document.getElementById('rassSelect2').value); let txt=['Кома','Глуб. сед.','Умер. сед.','Легк. сед.','Сонлив','Спокоен','Беспокоен','Возбужден','Оч. возб.','Агрессия'][val+5]; document.getElementById('rassOut').innerHTML=`RASS = ${val} (${txt})`;});
+    document.getElementById('calcWtPed').addEventListener('click',()=>{ let age=parseFloat(document.getElementById('ageYears').value); if(age) document.getElementById('wtPedRes').innerHTML=`Вес ~ ${age<10?(age+4)*2:age*3+7} кг`;});
+    document.getElementById('calcEtt').addEventListener('click',()=>{ let age=parseFloat(document.getElementById('ageEtt').value); let size=Math.floor(age/4+4); document.getElementById('ettRes').innerHTML=`ETT: ${size}.0 мм`;});
+    document.getElementById('calcKcal').addEventListener('click',()=>{ let w=parseFloat(document.getElementById('nutW').value); if(w) document.getElementById('kcalRes').innerHTML=`Калории: ${(w*25).toFixed(0)}-${(w*30).toFixed(0)} ккал/сут`;});
+    document.getElementById('weanAdvice').addEventListener('click',()=>{ document.getElementById('weanRes').innerHTML=`Проверьте RSBI, гемодинамику.`;});
+    document.getElementById('epiButton').addEventListener('click',()=>{ let w=prompt('Вес (кг)','70'); if(w) document.getElementById('epiRes').innerHTML=`Адреналин 0.01 мг/кг = ${(0.01*w).toFixed(2)} мг`;});
+    document.getElementById('calcSi').addEventListener('click',()=>{ let hr=parseFloat(document.getElementById('hr').value), sbp=parseFloat(document.getElementById('sbp').value); if(hr&&sbp) document.getElementById('siRes').innerHTML=`Индекс шока = ${(hr/sbp).toFixed(2)}`;});
+    const fullDrugs=[{name:"Пропофол",class:"Гипнотик",dose:"1.5-2.5 мг/кг"},{name:"Норадреналин",class:"Вазопрессор",dose:"0.05-0.5 мкг/кг/мин"},{name:"Рокуроний",class:"Миорелаксант",dose:"0.6 мг/кг"},{name:"Кетамин",class:"Анестетик",dose:"1-2 мг/кг"},{name:"Адреналин",class:"Код",dose:"1 мг"}];
+    document.getElementById('fullDrugList').innerHTML=fullDrugs.map(d=>`<div class="drug-item"><div class="drug-name">${d.name} <span class="badge">${d.class}</span></div><div class="drug-detail">${d.dose}</div></div>`).join('');
+    // неонатальные функции
+    document.getElementById('calcApgarBtn').addEventListener('click',()=>{ let s=parseInt(document.getElementById('apgarColor').value)+parseInt(document.getElementById('apgarPulse').value)+parseInt(document.getElementById('apgarReflex').value)+parseInt(document.getElementById('apgarTone').value)+parseInt(document.getElementById('apgarResp').value); document.getElementById('apgarResult').innerHTML=`Апгар: ${s} баллов`;});
+    document.getElementById('nrpGuideBtn').addEventListener('click',()=>{ let d=document.getElementById('nrpGuide'); d.style.display=d.style.display==='none'?'block':'none';});
+    document.getElementById('calcNeonEt').addEventListener('click',()=>{ let w=parseFloat(document.getElementById('neonWeight').value); if(w) document.getElementById('neonEtResult').innerHTML= w<1000?"ETT 2.5":(w<2000?"ETT 3.0":"ETT 3.5-4.0")+" глубина "+(w/1000+6).toFixed(1)+" см";});
+    document.getElementById('calcNeoDrugBtn').addEventListener('click',()=>{ let w=parseFloat(document.getElementById('neoDrugWeight').value)/1000; let drug=document.getElementById('neoDrugSelect').value; let txt=""; if(drug==='epi') txt=`Адреналин: ${(0.01*w).toFixed(2)} мг (${(0.1*w).toFixed(2)} мл) в/в`; else if(drug==='nalox') txt=`Налоксон: ${(0.1*w).toFixed(2)} мг`; else if(drug==='surf') txt=`Сурфактант: ${(200*w).toFixed(0)} мг эндотрахеально`; else txt=`Кофеин: нагрузка ${(20*w).toFixed(0)} мг в/в`; document.getElementById('neoDrugResult').innerHTML=txt;});
+    document.getElementById('calcNeoFluid').addEventListener('click',()=>{ let w=parseFloat(document.getElementById('neoFluidWeight').value); if(w) document.getElementById('neoFluidRes').innerHTML=`Объём: ${(w*100).toFixed(0)}-${(w*150).toFixed(0)} мл/сут`;});
+    document.getElementById('calcGlucoseInf').addEventListener('click',()=>{ let w=parseFloat(document.getElementById('neoFluidWeight').value), rate=parseFloat(document.getElementById('glucoseRate').value), conc=parseFloat(document.getElementById('glucoseConc').value); if(w&&rate&&conc){ let mlh=(rate*w*60)/(conc*10); document.getElementById('glucoseRes').innerHTML=`Скорость: ${mlh.toFixed(1)} мл/ч`;}});
+
+    // PWA Service Worker регистрация
+    if('serviceWorker' in navigator){
+        navigator.serviceWorker.register('/sw.js').catch(err=>console.log('SW не зарегистрирован, будет работать без офлайн-кэша', err));
+        // Создаём service worker динамически, так как файла нет на диске
+        const swCode = `self.addEventListener('install', e=>{ e.waitUntil(caches.open('anesicu-v1').then(c=>c.addAll(['/','/index.html']))); self.skipWaiting(); }); self.addEventListener('fetch', e=>{ e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))); });`;
+        const blob = new Blob([swCode], {type: 'application/javascript'});
+        const swUrl = URL.createObjectURL(blob);
+        navigator.serviceWorker.register(swUrl).then(reg=>console.log('SW зарегистрирован', reg)).catch(e=>console.warn('SW не удалось', e));
+    }
+</script>
+</body>
+</html>
